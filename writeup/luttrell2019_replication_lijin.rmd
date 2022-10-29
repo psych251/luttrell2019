@@ -119,28 +119,230 @@ You can comment this section out prior to final report with data collection.
 ### Data preparation
 
 Data preparation following the analysis plan.
+
+**Note that currently the sample size of the pilot study (*N*=3) is not enough for the following analysis, so there are some warnings and errors**
 	
-```{r include=F}
-###Data Preparation
-
+```{r include = F}
 ####Load Relevant Libraries and Functions
-
-####Import data
-
-#### Data exclusion / filtering
-
-#### Prepare data for analysis - create columns etc.
+library(dplyr)
+library(readr)
+library(psych)
+library(broom) 
+library(lavaan)
+library(ggplot2) 
+#library(pwr) 
+#library(mediation) 
+library(ggeffects) 
+#library(scales) 
+#library(extrafont)
+library(printr) 
+library(kableExtra)
+library(papaja) 
 ```
 
-### Confirmatory analysis
+```{r}
+####Import data
+pilot_data <- read_csv("../data/pilot_data.csv", show_col_types = FALSE)
+nrow(pilot_data)
+
+#### Data exclusion / filtering
+pilot_data0 <- pilot_data |> 
+  mutate(att1 = (att1_1 + att1_2 + att1_3) / 3) |>
+  mutate(att2 = (att2_1 + att2_2 + att2_3) / 3) |>
+  mutate(att.pre = 0 - att1, att.post = 0 - att2) |>
+  mutate(ideology = (poli_soc + poli_econ) / 2) 
+table(pilot_data0$cond.F)
+
+pilot_data1 <- pilot_data0 |> 
+  filter(att1 >= 0) 
+
+
+#### add columns
+pilot_data1$base_mor_low <- scale(pilot_data1$base_mor, scale = F) + sd(pilot_data1$base_mor)
+pilot_data1$base_mor_high <- scale(pilot_data1$base_mor, scale = F) - sd(pilot_data1$base_mor)
+pilot_data1$base_mor_max <- pilot_data1$base_mor - 5
+pilot_data1$cond_mor <- (pilot_data1$cond + 1) / 2
+pilot_data1$cond_prac <- (abs(pilot_data1$cond - 1))/2
+pilot_data1$ideology_low <- scale(pilot_data1$ideology, scale = F) + sd(pilot_data1$ideology, na.rm = T)
+pilot_data1$ideology_high <- scale(pilot_data1$ideology, scale = F) - sd(pilot_data1$ideology, na.rm = T)
+```
+
+### Demographics
+```{r}
+nrow(pilot_data1) # sample size
+table(pilot_data1$gender) # gender information
+describe(pilot_data1$age) |> 
+  select(mean, sd, median, min, max) |> round(2) # age
+```
+
+### Reliability and Validity
+
+```{r}
+#### reliability 
+##### pre-message attitude
+pilot_data1 |> select(att1_1, att1_2, att1_3) |> 
+  psych::alpha() |> with(total) |> round(2)
+#### post-message attitude
+pilot_data1 |> select(att2_1, att2_2, att2_3) |> 
+  psych::alpha() |> with(total) |> round(2)
+#### Political Orientation
+pilot_data1 |> select(poli_soc, poli_econ) |> 
+  psych::alpha() |> with(total) |> round(2)
+
+
+#### validity
+model <- '
+att_f1 =~ att1_1 + att1_2 + att1_3
+att_f2 =~ att2_1 + att2_2 + att2_3
+poli =~ poli_soc + poli_econ
+'
+var = c("att1_1", "att1_2", "att1_3", "att2_1", "att2_2", "att2_3", "poli_soc", "poli_econ")
+# cfa_fit <- cfa(model, pilot_data1, var)
+# note that currently the sample size is not enough for the cfa
+  
+
+```
+
+
+```{r include = F}
+
+# Set up plot theme
+## (Thanks to John Sakaluk for this particular setup: 
+## https://sakaluk.wordpress.com/2015/08/27/6-make-it-pretty-plotting-2-way-interactions-with-ggplot2/#APA)
+apatheme <- theme_bw() +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_line())
+
+# Regression Display Function
+## This function is useful for rounding estimates and displaying CIs alongside other output.
+display.lm <- function(model) {
+  df <- summary(model) |> with(df)
+  display.obj <- tidy(model) |> bind_cols(confint_tidy(model)) |> 
+    as.data.frame() |> mutate(p.value.char = ifelse(p.value < .001, "< .001", p.value),
+                               p.value.3 = round(p.value, 3),
+                               ` ` = ifelse(p.value < .001, "***", 
+                                            ifelse(p.value < .01, "**", 
+                                                   ifelse(p.value < .05, "*", 
+                                                          ifelse(p.value < .10, ".", " "))))) |>
+    mutate(p.value = as.character(ifelse(p.value < .001, "< .001", p.value.3)),
+           df = df[2]) |>
+    select(term, B = estimate, SE = std.error, t = statistic, df, p.value, conf.low, conf.high, ` `) |>
+    mutate_if(is.numeric, round, 2)
+  return(display.obj)
+}
+
+## Additional steps for formatting kable
+kable.lm <- function(display.obj) {
+  kable(display.obj, align = c("l", rep('c', ncol(display.obj) - 1))) |>
+    kable_styling(bootstrap_options = c("hover", "condensed", "responsive"), 
+                  full_width = F, position = "center")
+}
+
+# T-Test Display Function
+## This function is useful for giving summary statistics and Cohen's d along with t-test output
+display.t <- function(y, x, type = "ind", var.equal = T) {
+  tmp <- data.frame(x = x, y = y)
+
+  if(type=="ind") {
+    desc <- describeBy(tmp$y, group = tmp$x, mat = T)
+    Ms <- desc$mean
+    SDs <- desc$sd
+    t.out <- t.test(tmp$y ~ tmp$x, var.equal = var.equal)
+    d.out <- effsize::cohen.d(tmp$y, tmp$x)
+  }
+  if(type=="dep") {
+    desc <- describe(tmp)
+    Ms <- desc$mean
+    SDs <- desc$sd
+    t.out <- t.test(tmp$y, tmp$x, var.equal = var.equal, paired = T)
+    d.out <- effsize::cohen.d(tmp$y, tmp$x, paired = T)
+  }
+  out <- tidy(t.out) |>
+    mutate(Mean1 = Ms[1], SD1 = SDs[1], Mean2 = Ms[2], SD2 = SDs[2],
+           p.value.char = as.character(ifelse(p.value < .001, "< .001", round(p.value, 3)))) |>
+    mutate_if(is.numeric, round, 3) |>
+    select(Mean1, SD1, Mean2, SD2, t = statistic, df = parameter,
+           p = p.value.char) |>
+    mutate(d = d.out$estimate) |>
+    mutate_if(is.numeric, round, 2)
+  return(out)
+}
+```
+
+### Manipulation Check
+#### Perceived Morality and Practicality Between Message Conditions
+```{r}
+display.t(y = pilot_data1$essMoral, x = pilot_data1$cond.F) |>
+  kable(align=rep('c', 8)) |>
+  kable_styling(full_width = F, position = "center") |>
+  column_spec(1:8, width = "5em")
+
+
+#display.t(y = pilot_data1$essPrac, x = pilot_data1$cond.F) |>
+#  kable(align=rep('c', 8)) |>
+#  kable_styling(full_width = F, position = "center") |>
+#  column_spec(1:8, width = "5em")
+```
+
+### Persuasion Effects
+
+```{r}
+##### main effect
+pers.ME <- lm(att.post ~ att.pre + cond + base_mor, pilot_data1)
+# display.lm(pers.ME) |> kable.lm()
+
+##### interaction
+pers.int <- lm(att.post ~ att.pre + cond * base_mor, pilot_data1)
+# display.lm(pers.int) |> kable.lm()
+
+##### effect size
+R2.ME <- summary(pers.ME) |> with(r.squared)
+R2.Full <- summary(pers.int) |> with(r.squared)
+f2 <- round((R2.Full - R2.ME)/(1 - R2.Full), 2)
+# print(paste("$f^{2}$ = ", f2))
+
+```
+
+
+### Mediation Effect of Valenced Thoughts
+cannot conduct this now - requires coding of the thoughts
+
+### Moderation by Political Orientation
+```{r}
+ideo.ME <- lm(att.post ~ att.pre + cond + base_mor + ideology, pilot_data1)
+summary(ideo.ME)
+
+ideo.2way <- lm(att.post ~ att.pre + cond * base_mor + cond * ideology + base_mor * ideology, pilot_data1)
+
+
+ideo.3way <- lm(att.post ~ att.pre + cond * base_mor * ideology, pilot_data1)
+```
+
+### Effects of Other Attitude Bases
+```{r}
+# practical bias
+lm(att.post ~ att.pre + cond * base_prac, pilot_data1)
+
+# Emotion Basis
+pilot_data1$base_emo_low <- scale(pilot_data1$base_emo) + sd(pilot_data1$base_emo)
+pilot_data1$base_emo_high <- scale(pilot_data1$base_emo) - sd(pilot_data1$base_emo)
+
+lm(att.post ~ att.pre + cond * base_emo, pilot_data1)
+
+# Knowlege Basis
+lm(att.post ~ att.pre + cond * base_know + cond * base_mor, pilot_data1)
+
+# Consenus Basis
+lm(att.post ~ att.pre + cond * base_cons + cond * base_mor, pilot_data1)
+```
+
 
 The analyses as specified in the analysis plan.  
 
 *Side-by-side graph with original graph is ideal here*
 
-###Exploratory analyses
-
-Any follow-up analyses desired (not required).  
 
 ## Discussion
 
