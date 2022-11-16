@@ -113,15 +113,15 @@ You can comment this section out prior to final report with data collection.
   Any differences from what was described as the original plan, or “none”.
 
 
-##Results
-
+## Results of the Pilot Study
+Currently this part is for coding up the planned analyses . **Note that the sample size of the pilot study (*N*=3) is not enough for the following analysis, so there are some warnings and errors**
+	
 
 ### Data preparation
 
 Data preparation following the analysis plan.
 
-**Note that currently the sample size of the pilot study (*N*=3) is not enough for the following analysis, so there are some warnings and errors**
-	
+
 ```{r include = F}
 ####Load Relevant Libraries and Functions
 library(dplyr)
