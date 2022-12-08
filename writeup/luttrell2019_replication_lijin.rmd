@@ -4,6 +4,8 @@ author: "Lijin Zhang (lijinzhang@stanford.edu)"
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 output:
   html_document:
+    fig_width: 8
+    fig_height: 8 
     toc: yes
     toc_depth: 3
     toc_float:
@@ -18,7 +20,12 @@ output:
 
 ## Introduction
 
-<a href="#reference">Luttrell et al. ( 2019)</a> investigated whether the influence of moral counterattitudinal messages on attitude change depends on the extent that the initial attitudes were moralized.  They further explored the mediation effect of the perceptions/thoughts toward the message and the moderation effect of political orientation. To test the hypotheses, they conducted two studies on the attitudes toward recycling.
+<a href="#reference">Luttrell et al. ( 2019)</a> investigated the influence of moral message on persuasion. They found the significant interaction effect between the message type (moral / practical) and moral basis  (.e., participants with a low moral attitude basis were more persuaded by the practical appeal than the moral appeal, whereas participants with a high moral attitude basis were more persuaded by the moral appeal than the practical appeal).  They further explored the mediation effect of the perceptions/thoughts toward the message and the moderation effect of political orientation. 
+
+I will replicate the first study. This study is based on a survey by randomly assigning participants into the moral / practical groups, and testing the differences of their responses toward the moral / practical messages. 
+
+### Key analysis of Interest
+The key test is to test the interaction effect between the message type (moral / practical) and moral basis.
 
 
 ### Justification
@@ -28,20 +35,27 @@ I choose this paper to replicate because I have been working on factor analysis 
 
 
 ### Challenge 
-The potential challenge in this study is the funding to collect sufficient samples. In the original paper, the authors took one dollar to recruit each participant, and they recruited around 200 people.
+The potential challenge in this study is the funding to collect sufficient samples. In the original paper, the authors took one dollar to recruit each participant, and they recruited around 400 people.
 
 ## Methods
 
 ### Power Analysis
+```{r}
+library(pwr)
+pwr.f2.test(u = 1, #df for numerator; conducting the analysis for the single interaction term
+            f2 = 0.03, #effect size from the original paper
+            sig.level = .05, 
+            power = .80)
 
-*Original effect size, power analysis for samples to achieve 80%, 90%, 95% power to detect that effect size.  Considerations of feasibility for selecting planned sample size.*
+
+```
 
 ### Planned Sample
 
-The authors preregistered a target sample size of 200, which provided 80% power to detect an interaction effect as small as .04. They finally collected 415 samples for study 1. However, to save the money, I plan to collect 50 samples and each participant will get $1 for completing the 5-minute survey.
+The authors preregistered a target sample size of 200, which provided 80% power to detect an interaction effect as small as .04. They finally collected 415 samples for study 1. The power analysis above based on the effect of the original study suggested a target sample size of 262. However, to save the money, I plan to collect 50 samples and each participant will get $1 for completing the 7-minute survey.
 
 ### Materials
-This experiment will be conducted through [qualtrics](https://www.qualtrics.com/) and participants will be required to fill out a survey (I have designed [the survey](https://stanforduniversity.qualtrics.com/jfe/form/SV_5nj0m3Z5TAatCSi)). The questionnaire on attitude toward recycling, political orientation, perceptions about the message, as well as the stimuli (practical or moral arguments against recycling) used in the replication study will be the same as <a href="#reference">Luttrell et al. ( 2019)</a> (see the quote below). 
+This experiment will be conducted through [qualtrics](https://www.qualtrics.com/) and participants will be required to fill out a survey (see [the survey](https://stanforduniversity.qualtrics.com/jfe/form/SV_5nj0m3Z5TAatCSi)). The questionnaire on attitude toward recycling, political orientation, perceptions about the message, as well as the stimuli (practical or moral arguments against recycling) used in the replication study will be the same as <a href="#reference">Luttrell et al. ( 2019)</a> (see the quote below). 
 
 > Premessage attitudes. Participants rated their attitudes toward recycling using three 9-point semantic-differential scales, ranging from −4 (bad, dislike, and negative) to 4 (good, like, and positive). 
 
@@ -71,11 +85,14 @@ At the beginning of the survey, participants will be asked to read an introducti
 #### Exclusion criteria
 > First, we exclude any cases for which the message would be pro-attitudinal (i.e., attitudes toward recycling below the midpoint.)  Next, we excluded any cases that were duplicates of a previous participant’s IP Address. 
 
+
 #### Reliability of measures
 Calculate Cronbach’s alpha for the measures
 
 #### Validity of measures
 Conduct confirmatory factor analysis for the measures
+
+
 
 #### Manipulation check 
 > Data were submitted to t-test analyses to determine whether the messages were perceived as intended. 
@@ -102,20 +119,19 @@ Conduct confirmatory factor analysis for the measures
 
 - The original paper didn't conduct confirmatory factor analysis for construct validation, and I will try to conduct in the replication study.
 
-### Methods Addendum (Post Data Collection)
-
-You can comment this section out prior to final report with data collection.
 
 #### Actual Sample
-  Sample size, demographics, data exclusions based on rules spelled out in analysis plan
+We recruited 50 participants and adopted the following exclusion criteria:
+- Replicated IP address
+- Same responses on all items
+- Hold a negative attitude basis toward recycling (*N* = 4)
 
-#### Differences from pre-data collection methods plan
-  Any differences from what was described as the original plan, or “none”.
+The final sample size is 4 (17 female, 28 male, and one participant prefer not to say; age: Mean = 28.37, sd = 9.08; Moral Argument Group 16, Practical Argument Group 30).
 
 
-## Results of the Pilot Study
-Currently this part is for coding up the planned analyses . **Note that the sample size of the pilot study (*N*=3) is not enough for the following analysis, so there are some warnings and errors**
-	
+
+
+## Results 
 
 ### Data preparation
 
@@ -141,38 +157,59 @@ library(papaja)
 ```
 
 ```{r}
-####Import data
-pilot_data <- read_csv("../data/pilot_data.csv", show_col_types = FALSE)
-nrow(pilot_data)
+#### Import data
+rawData <- read_csv("../data/data.csv", show_col_types = FALSE)
+nrow(rawData)
 
 #### Data exclusion / filtering
-pilot_data0 <- pilot_data |> 
+data0 <- rawData |> 
   mutate(att1 = (att1_1 + att1_2 + att1_3) / 3) |>
   mutate(att2 = (att2_1 + att2_2 + att2_3) / 3) |>
   mutate(att.pre = 0 - att1, att.post = 0 - att2) |>
   mutate(ideology = (poli_soc + poli_econ) / 2) 
-table(pilot_data0$cond.F)
+table(data0$cond.F)
 
-pilot_data1 <- pilot_data0 |> 
-  filter(att1 >= 0) 
+```
 
+
+
+No replicated IP address and no participants gave the same response on every items. 
+Following the original paper, because the manipulation is to persuade participants that recycling is bad, and these already had negative attitudes toward recycling will be deleted (*N* = 4).
+```{r}
+data1 <- data0 |> 
+  filter(att1 >= 0)  
+table(data1$cond.F)
 
 #### add columns
-pilot_data1$base_mor_low <- scale(pilot_data1$base_mor, scale = F) + sd(pilot_data1$base_mor)
-pilot_data1$base_mor_high <- scale(pilot_data1$base_mor, scale = F) - sd(pilot_data1$base_mor)
-pilot_data1$base_mor_max <- pilot_data1$base_mor - 5
-pilot_data1$cond_mor <- (pilot_data1$cond + 1) / 2
-pilot_data1$cond_prac <- (abs(pilot_data1$cond - 1))/2
-pilot_data1$ideology_low <- scale(pilot_data1$ideology, scale = F) + sd(pilot_data1$ideology, na.rm = T)
-pilot_data1$ideology_high <- scale(pilot_data1$ideology, scale = F) - sd(pilot_data1$ideology, na.rm = T)
+data1$base_mor_low <- scale(data1$base_mor, scale = F) + sd(data1$base_mor)
+data1$base_mor_high <- scale(data1$base_mor, scale = F) - sd(data1$base_mor)
+data1$base_mor_max <- data1$base_mor - 5
+data1$cond_mor <- (data1$cond + 1) / 2
+data1$cond_prac <- (abs(data1$cond - 1))/2
+data1$ideology_low <- scale(data1$ideology, scale = F) + sd(data1$ideology, na.rm = T)
+data1$ideology_high <- scale(data1$ideology, scale = F) - sd(data1$ideology, na.rm = T)
+
+#### thought listing
+data1$pos <- rowSums(select(data1, matches("Th[1-6]VA")) == 1, na.rm = T)
+data1$neg <- rowSums(select(data1, matches("Th[1-6]VA")) == 2, na.rm = T)
+data1$neu <- rowSums(select(data1, matches("Th[1-6]VA")) == 3, na.rm = T)
+data1$irr <- rowSums(select(data1, matches("Th[1-6]VA")) == 4, na.rm = T)
+data1 <- mutate(data1, cogres = (pos - neg) / (pos + neg + neu))
+
+#Irrelevant-only responses will have a zero denominator; the intention is that they're zero
+data1$cogres[is.nan(data1$cogres)] <- 0
+
+
+data1$cond.F = factor(data1$cond.F, levels=c("Moral Arguement", "Practical Arguement"))
+
 ```
 
 ### Demographics
 ```{r}
-nrow(pilot_data1) # sample size
-table(pilot_data1$gender) # gender information
-describe(pilot_data1$age) |> 
-  select(mean, sd, median, min, max) |> round(2) # age
+nrow(data1) # sample size
+table(data1$gender) # gender information
+summary(data1$age) 
+sd(data1$age)
 ```
 
 ### Reliability and Validity
@@ -180,29 +217,33 @@ describe(pilot_data1$age) |>
 ```{r}
 #### reliability 
 ##### pre-message attitude
-pilot_data1 |> select(att1_1, att1_2, att1_3) |> 
+data1 |> select(att1_1, att1_2, att1_3) |> 
   psych::alpha() |> with(total) |> round(2)
 #### post-message attitude
-pilot_data1 |> select(att2_1, att2_2, att2_3) |> 
+data1 |> select(att2_1, att2_2, att2_3) |> 
   psych::alpha() |> with(total) |> round(2)
 #### Political Orientation
-pilot_data1 |> select(poli_soc, poli_econ) |> 
+data1 |> select(poli_soc, poli_econ) |> 
   psych::alpha() |> with(total) |> round(2)
+
+
 
 
 #### validity
+# The CFA model didn't converge given the small sample size.
 model <- '
 att_f1 =~ att1_1 + att1_2 + att1_3
 att_f2 =~ att2_1 + att2_2 + att2_3
 poli =~ poli_soc + poli_econ
 '
 var = c("att1_1", "att1_2", "att1_3", "att2_1", "att2_2", "att2_3", "poli_soc", "poli_econ")
-# cfa_fit <- cfa(model, pilot_data1, var)
-# note that currently the sample size is not enough for the cfa
+#cfa_fit <- bcfa(model, data1, var)
+# summary(cfa_fit)
+# fitMeasures(cfa_fit)
+# the sample size is not enough for the cfa and model didn't converge
   
-
 ```
-
+the sample size is not enough for the cfa and model didn't converge
 
 ```{r include = F}
 
@@ -273,86 +314,318 @@ display.t <- function(y, x, type = "ind", var.equal = T) {
 
 ### Manipulation Check
 #### Perceived Morality and Practicality Between Message Conditions
+
+Participants perceived the moral message as appealing more to morality (M = 4.94, SD = 1.24) than the practical message (M = 3.83, SD = 1.68) t(44) = 2.31,p = 0.026, d = 0.71.
+
+Participants perceived the practical message as appealing more to practicality (M = 5.53., SD = 1.46) than the moral message (M = 3.62, SD = 1.67) t(44) = -4.03,p <.001, d = -1.25.
+
+
 ```{r}
-display.t(y = pilot_data1$essMoral, x = pilot_data1$cond.F) |>
+### Perceived Morality
+display.t(y = data1$essMoral, x = data1$cond.F) |>
   kable(align=rep('c', 8)) |>
   kable_styling(full_width = F, position = "center") |>
   column_spec(1:8, width = "5em")
 
+### Perceived Practicality
+display.t(y = data1$essPrac, x = data1$cond.F) |>
+  kable(align=rep('c', 8)) |>
+  kable_styling(full_width = F, position = "center") |>
+  column_spec(1:8, width = "5em")
 
-#display.t(y = pilot_data1$essPrac, x = pilot_data1$cond.F) |>
-#  kable(align=rep('c', 8)) |>
-#  kable_styling(full_width = F, position = "center") |>
-#  column_spec(1:8, width = "5em")
 ```
 
 ### Persuasion Effects
 
+No overall effect of message type (p = .87), no overall effect of moral attitude basis: b = 0.258, se = .304, t(42) = 0.798, p = 0.429. 
+
+
+No significant interaction between message type and moral attitude basis, b = −0.009, t(41) = −0.029, p =0.977, 𝒇^𝟐   = 0
+
+
 ```{r}
 ##### main effect
-pers.ME <- lm(att.post ~ att.pre + cond + base_mor, pilot_data1)
-# display.lm(pers.ME) |> kable.lm()
+pers.ME <- lm(att.post ~ att.pre + cond + base_mor, data1)
+ summary(pers.ME) 
 
 ##### interaction
-pers.int <- lm(att.post ~ att.pre + cond * base_mor, pilot_data1)
-# display.lm(pers.int) |> kable.lm()
+pers.int <- lm(att.post ~ att.pre + cond * base_mor, data1)
+ summary(pers.int) 
 
 ##### effect size
 R2.ME <- summary(pers.ME) |> with(r.squared)
 R2.Full <- summary(pers.int) |> with(r.squared)
 f2 <- round((R2.Full - R2.ME)/(1 - R2.Full), 2)
-# print(paste("$f^{2}$ = ", f2))
+print(paste("f2 = ", f2))
 
 ```
 
+Visualization
+```{r}
+Fig1 <- ggpredict(lm(att.post ~ att.pre + cond.F * base_mor, data1),
+          terms = c("base_mor [meansd]", "cond.F")) %>%
+  ggplot(aes(x = x, y = predicted, linetype = group)) +
+  geom_line(size = 2, color = "black") +
+  apatheme +
+  ylim(c(-4, 0)) +
+  labs(y = "Post-Message Attitudes",
+       x = "Moral Attitude Basis",
+       linetype = "") +
+  theme(legend.position = "top",
+        legend.key.width = unit(.5, "inches"),
+        text = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        axis.title.x = element_text(margin = margin(t = 12, b = 5)),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        legend.text = element_text(size = 14))
+ggsave(plot = Fig1, "fig1.png", dpi=300, width = 8, height = 6)
+print(Fig1)
+
+
+```
+
+Figure 1 from the original paper
+
+![](original_fig1.png)
 
 ### Mediation Effect of Valenced Thoughts
-cannot conduct this now - requires coding of the thoughts
+
+Following the original paper, I rated the overall valence (i.e., whether each thought was promessage, antimessage, neutral to the message, or unrelated to the message) of the thoughts that participants list on the free response field, and test the mediation effect of valence thoughts. I cannot test the rater consistency reliability because there is no second rater.
+
+
+```{r}
+cogres.int <- lm(cogres ~ cond * base_mor, data1)
+#summary(cogres.int)
+
+data1$int <- data1$cond * data1$base_mor
+model.y <- lm(att.post ~ int + cogres + att.pre + cond + base_mor, data1)
+#summary(model.y)
+model.m <- lm(cogres ~ int + att.pre + cond + base_mor, data1)
+med.model <- mediation::mediate(model.m, model.y, treat = "int", mediator = "cogres", 
+                                boot = TRUE, sims = 1000, conf.level = .95)
+summary(med.model)
+```
 
 ### Moderation by Political Orientation
 ```{r}
-ideo.ME <- lm(att.post ~ att.pre + cond + base_mor + ideology, pilot_data1)
+ideo.ME <- lm(att.post ~ att.pre + cond + base_mor + ideology, data1)
 summary(ideo.ME)
 
-ideo.2way <- lm(att.post ~ att.pre + cond * base_mor + cond * ideology + base_mor * ideology, pilot_data1)
+ideo.2way <- lm(att.post ~ att.pre + cond * base_mor + cond * ideology + base_mor * ideology, data1)
+summary(ideo.2way)
 
-
-ideo.3way <- lm(att.post ~ att.pre + cond * base_mor * ideology, pilot_data1)
+ideo.3way <- lm(att.post ~ att.pre + cond * base_mor * ideology, data1)
+summary(ideo.3way)
 ```
 
-### Effects of Other Attitude Bases
+
+
+
 ```{r}
-# practical bias
-lm(att.post ~ att.pre + cond * base_prac, pilot_data1)
+data1$att.pre.c <- scale(data1$att.pre, scale = F) %>% as.numeric() #Centering the covariate to estimate predicted values at the mean of this variable.
 
-# Emotion Basis
-pilot_data1$base_emo_low <- scale(pilot_data1$base_emo) + sd(pilot_data1$base_emo)
-pilot_data1$base_emo_high <- scale(pilot_data1$base_emo) - sd(pilot_data1$base_emo)
+Fig2 <- lm(att.post ~ att.pre.c + cond.F * base_mor * ideology, data1) %>%
+  ggpredict(terms = c("base_mor [meansd]", "cond.F", "ideology [1,2,3,4,5]")) %>%
+  mutate(ideo.F = factor(facet, labels = c("Very Liberal", "Somewhat Liberal", 
+                                           "Neither", "Somewhat Conservative", "Very Conservative"))) %>%
+  ggplot(aes(x, predicted, linetype = group)) +
+geom_line(size = 2) +
+  apatheme +
+  ylim(c(-4, 0)) +
+  facet_wrap(~ ideo.F, nrow = 1) +
+  labs(y = "Post-Message Attitudes",
+       x = "Moral Attitude Basis",
+       linetype = "",
+       title = "A") +
+  #guides(fill = F, color = F, 
+  #       linetype=guide_legend(keywidth=0.5, default.unit="inch")) +
+  theme(legend.position = "top",
+        legend.key.width = unit(.5, "inches"),
+        text = element_text(family = "Times New Roman", size = 16),
+        axis.text = element_text(size = 12),
+        axis.title.x = element_text(margin = margin(t = 12, b = 5)),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        legend.text = element_text(size = 14),
+        strip.text = element_text(size = 10),
+        plot.title = element_text(size = 16, hjust = -.045))
+ggsave(plot = Fig2, "fig2.png", dpi=300, width = 8, height = 6)
+print(Fig2)
 
-lm(att.post ~ att.pre + cond * base_emo, pilot_data1)
 
-# Knowlege Basis
-lm(att.post ~ att.pre + cond * base_know + cond * base_mor, pilot_data1)
-
-# Consenus Basis
-lm(att.post ~ att.pre + cond * base_cons + cond * base_mor, pilot_data1)
 ```
 
 
-The analyses as specified in the analysis plan.  
+```{r}
+Fig2B <- ggplot(data1, aes(x = ideology)) + 
+  geom_histogram(bins = 5, color = "white", fill = "black") +
+  geom_rug(sides = "b", aes(y = 0), position = position_jitter(width = .1), alpha = .2) +
+  labs(y = "Frequency", x = "Ideology", title = "B\n") +
+  apatheme +
+  theme(text = element_text(family = "Times New Roman", size = 12),
+        axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        plot.title = element_text(size = 16, hjust = -.05))
 
-*Side-by-side graph with original graph is ideal here*
+ggsave(plot = Fig2B, "fig2B.png", dpi=300, width = 8, height = 6)
+print(Fig2B)
 
+
+```
+
+Figure 2 from the original paper
+![](original_fig2.png)
+
+![](original_fig2b.png)
+
+
+
+### Exploring the differences between the replication study and the original study
+
+#### The influence of age
+
+```{r}
+#####  effect of age
+lmage <- lm(att.post ~ att.pre + cond + base_mor + age , data1)
+ summary(lmage) 
+summary(data1$att.pre)
+```
+
+```{r}
+
+
+Fig1b <- ggpredict(lm(att.post ~ att.pre + cond.F * age, data1),
+          terms = c("age [meansd]", "cond.F")) %>%
+  ggplot(aes(x = x, y = predicted, linetype = group)) +
+  geom_line(size = 2, color = "black") +
+  apatheme +
+  ylim(c(-4, 0)) +
+  labs(y = "Post-Message Attitudes",
+       x = "Age",
+       linetype = "") +
+  #scale_x_continuous(breaks=pretty_breaks(n=5)) +
+  theme(legend.position = "top",
+        legend.key.width = unit(.5, "inches"),
+        text = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        axis.title.x = element_text(margin = margin(t = 12, b = 5)),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        legend.text = element_text(size = 14)) 
+print(Fig1b)
+
+
+ggsave(plot = Fig1b, "fig1b_rep.png", dpi=300, width = 6, height = 6)
+```
+
+Data from the original paper
+
+```{r}
+
+load('../original_paper/original.RData')
+lmage_ori <- lm(att.post ~ att.pre + cond + base_mor + age , S1)
+ summary(lmage_ori) 
+
+
+S1$cond.F = factor(S1$cond.F, levels=c("Moral Message", "Practical Message"))
+Fig1b_ori <- ggpredict(lm(att.post ~ att.pre + cond.F * age, S1),
+          terms = c("age [meansd]", "cond.F")) %>%
+  ggplot(aes(x = x, y = predicted, linetype = group)) +
+  geom_line(size = 2, color = "black") +
+  apatheme +
+  ylim(c(-4, 0)) +
+  labs(y = "Post-Message Attitudes",
+       x = "Age",
+       linetype = "") +
+  #scale_x_continuous(breaks=pretty_breaks(n=5)) +
+  theme(legend.position = "top",
+        legend.key.width = unit(.5, "inches"),
+        text = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        axis.title.x = element_text(margin = margin(t = 12, b = 5)),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        legend.text = element_text(size = 14)) 
+print(Fig1b_ori)
+
+
+ggsave(plot = Fig1b_ori, "fig1b_ori.png", dpi=300, width = 6, height = 6)
+```
+```{r}
+t.test(data1$age, S1$age) 
+
+```
+
+
+#### Scatter Plot of Pre- and Post-message attitude
+
+```{r}
+ggplot(data = data1) + 
+  geom_point(aes(x=att.pre, y=att.post)) + 
+  labs(y = "Post-Message Attitudes",
+       x = "Pre-Message Attitudes") + 
+  apatheme +
+  theme(legend.position = "top",
+        legend.key.width = unit(.5, "inches"),
+        text = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        axis.title.x = element_text(margin = margin(t = 12, b = 5)),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        legend.text = element_text(size = 14)) 
+
+
+
+ggsave("point_rep.png", dpi=300, width = 8, height = 6) 
+
+
+```
+
+
+```{r}
+
+
+ggplot(data = S1) + 
+  geom_point(aes(x=att.pre, y=att.post)) + 
+  labs(y = "Post-Message Attitudes",
+       x = "Pre-Message Attitudes") + 
+  apatheme +
+  theme(legend.position = "top",
+        legend.key.width = unit(.5, "inches"),
+        text = element_text(size = 16),
+        axis.text = element_text(size = 12),
+        axis.title.x = element_text(margin = margin(t = 12, b = 5)),
+        axis.title.y = element_text(margin = margin(r = 8)),
+        legend.text = element_text(size = 14)) 
+
+
+ggsave("point_ori.png", dpi=300, width = 8, height = 6) 
+
+
+
+
+```
 
 ## Discussion
 
 ### Summary of Replication Attempt
 
-Open the discussion section with a paragraph summarizing the primary result from the confirmatory analysis and the assessment of whether it replicated, partially replicated, or failed to replicate the original result.  
+In the original paper, the result of the key test is: no overall effect of message type (p = .39), but there was an overall effect of moral attitude basis: b = −0.34, 95% CI = [−0.52, −0.16], t(411) = −3.77, p < .001. significant interaction between message type and moral attitude basis, b = −0.27, 95% CI = [−0.42, −0.11], t(410) = −3.34, p < .001,  f2  = .03. Results were consistent with the moral-matching hypothesis: participants with a low moral attitude basis were more persuaded by the practical appeal than the moral appeal, whereas participants with a high moral attitude basis were marginally more persuaded by the moral appeal than the practical appeal.
+
+
+The result of this paper is:
+No overall effect of message type (p = .87), no overall effect of moral attitude basis: b = 0.258, se = .304, t(42) = 0.798, p = 0.429. No significant interaction between message type and moral attitude basis, b = −0.009, t(41) = −0.029, p =0.977, f2  = 0.
+
+So I was unable to replicate the study 1 of original paper. Also, figure 1 (interaction between message type and moral attitude basis) and figure 2 (interaction between message type, moral attitude basis, and political orientation) showed different pattern from the original paper. 
+
 
 ### Commentary
 
-Add open-ended commentary (if any) reflecting (a) insights from follow-up exploratory analysis, (b) assessment of the meaning of the replication (or not) - e.g., for a failure to replicate, are the differences between original and present study ones that definitely, plausibly, or are unlikely to have been moderators of the result, and (c) discussion of any objections or challenges raised by the current and original authors about the replication attempt.  None of these need to be long.
+
+There are several potential reasons for the different results of the replication study and the original study.
+
+- First, the reliability of the pre-message attitude scale is lower (Cronbach's alpha = 0.71) in the replication study compared to the original paper (0.97). The low internal consistency made the measures of pre-message attitude less reliable.
+- Second, the results based on the exploration of age suggested that the age of the samples in the replication study is much younger than the original study. Also, a trend of the interaction between age and message type was found in the figure. But currently the sample size is not enough to test the influence of age in this study. 
+- Third, the last two figures suggested that most participant in this study hold extreme pro-recycling attitude, which is different from the data of the original paper.
+
+
+Overall, the results of the replication study was different from the original paper. The results are not significant, and even the pattern of data was also different. For example, figure 2 on the three way interaction between message type, political orientation and moral attitude basis. A clear pattern of the interaction between political orientation and moral attitude basis was found in this replication study. Future study are suggested to collect more data to test this effect. 
 
 
 ## Reference
